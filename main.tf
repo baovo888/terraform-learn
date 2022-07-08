@@ -193,36 +193,32 @@ resource "aws_db_subnet_group" "db-subnet-group" {
 }
 
 
-resource "aws_db_instance" "db-Aurora" {
-    identifier           = "bao-db"
-    instance_class       = "db.t2.small"
-    allocated_storage    = 5
-    engine               = "mysql"
-    engine_version       = "5.7"
+resource "aws_rds_cluster_instance" "rds_cluster_instances" {
+    count              = 1
+    identifier         = "aurora-cluster-${count.index}"
+    cluster_identifier = aws_rds_cluster.rds_cluster.id
+    instance_class     = "db.t2.small"
+    engine             = aws_rds_cluster.rds_cluster.engine
+    engine_version     = aws_rds_cluster.rds_cluster.engine_version
+}
+
+
+resource "aws_rds_cluster" "rds_cluster" {
+    cluster_identifier = "aurora-cluster-bao"
+    availability_zones = ["ap-southeast-2a", "ap-southeast-2b"]
+    engine             = "aurora"
+    database_name      = "bao"
+    master_username    = var.db_username
+    master_password    = var.db_password
     db_subnet_group_name = aws_db_subnet_group.db-subnet-group.id
-    username             = var.db_username
-    password             = var.db_password
-    parameter_group_name = "default.mysql5.7"
     skip_final_snapshot  = true
     vpc_security_group_ids = [aws_security_group.sg-DB.id]
 }
 
 
-output "rds_hostname" {
-    description = "RDS instance hostname"
-    value       = aws_db_instance.db-Aurora.address
-}
-
-
-output "rds_port" {
-    description = "RDS instance port"
-    value       = aws_db_instance.db-Aurora.port
-}
-
-
-output "rds_username" {
-    description = "RDS instance root username"
-    value       = aws_db_instance.db-Aurora.username
+output "rds_cluster_endpoint" {
+    description = "RDS cluster endpoint"
+    value       = aws_rds_cluster.rds_cluster.endpoint
 }
 
 
